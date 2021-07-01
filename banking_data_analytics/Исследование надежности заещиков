@@ -1,0 +1,2879 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Исследование надёжности заёмщиков\n",
+    "\n",
+    "## Заказчик — кредитный отдел банка. Нужно разобраться, влияет ли семейное положение и количество детей клиента на факт погашения кредита в срок. Входные данные от банка — статистика о платёжеспособности клиентов.\n",
+    "\n",
+    "### Результаты исследования будут учтены при построении модели **кредитного скоринга** — специальной системы, которая оценивает способность потенциального заёмщика вернуть кредит банку."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Основная цель данной работы -  \n",
+    " это вычислить есть ли закономерность в платежеспособности заемщиков  \n",
+    "  со штампом в паспорте и без.  \n",
+    " \n",
+    "Для решения задачи, поставленной банком, необходимо  \n",
+    " действавать по слудующему плану:\n",
+    "     \n",
+    "[1. Ознакомимся с данными и проведем их предобработку](#1-bullet)    \n",
+    "     \n",
+    "   [ - 1.1. Проверим данные на пропуски: заменить или удалить пропуски](#1.1-bullet)  \n",
+    "   [ - 1.2. Заменим типы данных для дальнейшего удобства в использовании](#1.2-bullet)  \n",
+    "   [ - 1.3. Проверим данные на наличие дубликатов](#1.3-bullet)  \n",
+    "   [ - 1.4. Проведем лемматизацию данных](#1.4-bullet)   \n",
+    "   [ - 1.5. Категоризируем данные](#1.5-bullet)  \n",
+    "     \n",
+    "[2. Ответим на непосредственные вопросы заказчика](#2-bullet)  \n",
+    "\n",
+    "[3. Общие выводы](#3-bullet)  "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1. Ознакомимся с данными и проведем их предобработку\n",
+    "Откроем файл с данными и изучим общую информацию. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>days_employed</th>\n",
+       "      <th>dob_years</th>\n",
+       "      <th>education</th>\n",
+       "      <th>education_id</th>\n",
+       "      <th>family_status</th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>debt</th>\n",
+       "      <th>total_income</th>\n",
+       "      <th>purpose</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-8437.673028</td>\n",
+       "      <td>42</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>253875.639453</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-4024.803754</td>\n",
+       "      <td>36</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>112080.014102</td>\n",
+       "      <td>приобретение автомобиля</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-5623.422610</td>\n",
+       "      <td>33</td>\n",
+       "      <td>Среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>145885.952297</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>-4124.747207</td>\n",
+       "      <td>32</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>267628.550329</td>\n",
+       "      <td>дополнительное образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "      <td>340266.072047</td>\n",
+       "      <td>53</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>0</td>\n",
+       "      <td>158616.077870</td>\n",
+       "      <td>сыграть свадьбу</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-926.185831</td>\n",
+       "      <td>27</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>M</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>255763.565419</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2879.202052</td>\n",
+       "      <td>43</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>240525.971920</td>\n",
+       "      <td>операции с жильем</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-152.779569</td>\n",
+       "      <td>50</td>\n",
+       "      <td>СРЕДНЕЕ</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>135823.934197</td>\n",
+       "      <td>образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "      <td>-6929.865299</td>\n",
+       "      <td>35</td>\n",
+       "      <td>ВЫСШЕЕ</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>95856.832424</td>\n",
+       "      <td>на проведение свадьбы</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>9</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2188.756445</td>\n",
+       "      <td>41</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>144425.938277</td>\n",
+       "      <td>покупка жилья для семьи</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children  days_employed  dob_years education  education_id  \\\n",
+       "0         1   -8437.673028         42    высшее             0   \n",
+       "1         1   -4024.803754         36   среднее             1   \n",
+       "2         0   -5623.422610         33   Среднее             1   \n",
+       "3         3   -4124.747207         32   среднее             1   \n",
+       "4         0  340266.072047         53   среднее             1   \n",
+       "5         0    -926.185831         27    высшее             0   \n",
+       "6         0   -2879.202052         43    высшее             0   \n",
+       "7         0    -152.779569         50   СРЕДНЕЕ             1   \n",
+       "8         2   -6929.865299         35    ВЫСШЕЕ             0   \n",
+       "9         0   -2188.756445         41   среднее             1   \n",
+       "\n",
+       "      family_status  family_status_id gender income_type  debt   total_income  \\\n",
+       "0   женат / замужем                 0      F   сотрудник     0  253875.639453   \n",
+       "1   женат / замужем                 0      F   сотрудник     0  112080.014102   \n",
+       "2   женат / замужем                 0      M   сотрудник     0  145885.952297   \n",
+       "3   женат / замужем                 0      M   сотрудник     0  267628.550329   \n",
+       "4  гражданский брак                 1      F   пенсионер     0  158616.077870   \n",
+       "5  гражданский брак                 1      M   компаньон     0  255763.565419   \n",
+       "6   женат / замужем                 0      F   компаньон     0  240525.971920   \n",
+       "7   женат / замужем                 0      M   сотрудник     0  135823.934197   \n",
+       "8  гражданский брак                 1      F   сотрудник     0   95856.832424   \n",
+       "9   женат / замужем                 0      M   сотрудник     0  144425.938277   \n",
+       "\n",
+       "                      purpose  \n",
+       "0               покупка жилья  \n",
+       "1     приобретение автомобиля  \n",
+       "2               покупка жилья  \n",
+       "3  дополнительное образование  \n",
+       "4             сыграть свадьбу  \n",
+       "5               покупка жилья  \n",
+       "6           операции с жильем  \n",
+       "7                 образование  \n",
+       "8       на проведение свадьбы  \n",
+       "9     покупка жилья для семьи  "
+      ]
+     },
+     "execution_count": 1,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import pandas as pd \n",
+    "df = pd.read_csv('/datasets/data.csv')\n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "1. вызывает вопрос \"-\" в столбце days_employed - наверное это отсутсвие официальной работы \n",
+    "2. разными способами начертания в education - надо будет изменить , чтобы красиво было\n",
+    "3. забавно, что на проведение свадьбы берут кредит, даже в 53 года\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 21525 entries, 0 to 21524\n",
+      "Data columns (total 12 columns):\n",
+      "children            21525 non-null int64\n",
+      "days_employed       19351 non-null float64\n",
+      "dob_years           21525 non-null int64\n",
+      "education           21525 non-null object\n",
+      "education_id        21525 non-null int64\n",
+      "family_status       21525 non-null object\n",
+      "family_status_id    21525 non-null int64\n",
+      "gender              21525 non-null object\n",
+      "income_type         21525 non-null object\n",
+      "debt                21525 non-null int64\n",
+      "total_income        19351 non-null float64\n",
+      "purpose             21525 non-null object\n",
+      "dtypes: float64(2), int64(5), object(5)\n",
+      "memory usage: 2.0+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1.1-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1.1. Проверим данные на пропуски: заменить или удалить пропуски\n",
+    "Посмотрим наличие пропусков"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>days_employed</th>\n",
+       "      <th>dob_years</th>\n",
+       "      <th>education</th>\n",
+       "      <th>education_id</th>\n",
+       "      <th>family_status</th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>debt</th>\n",
+       "      <th>total_income</th>\n",
+       "      <th>purpose</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-8437.673028</td>\n",
+       "      <td>42</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>253875.639453</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-4024.803754</td>\n",
+       "      <td>36</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>112080.014102</td>\n",
+       "      <td>приобретение автомобиля</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-5623.422610</td>\n",
+       "      <td>33</td>\n",
+       "      <td>Среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>145885.952297</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>-4124.747207</td>\n",
+       "      <td>32</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>267628.550329</td>\n",
+       "      <td>дополнительное образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "      <td>340266.072047</td>\n",
+       "      <td>53</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>0</td>\n",
+       "      <td>158616.077870</td>\n",
+       "      <td>сыграть свадьбу</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-926.185831</td>\n",
+       "      <td>27</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>M</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>255763.565419</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2879.202052</td>\n",
+       "      <td>43</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>240525.971920</td>\n",
+       "      <td>операции с жильем</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-152.779569</td>\n",
+       "      <td>50</td>\n",
+       "      <td>СРЕДНЕЕ</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>135823.934197</td>\n",
+       "      <td>образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "      <td>-6929.865299</td>\n",
+       "      <td>35</td>\n",
+       "      <td>ВЫСШЕЕ</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>95856.832424</td>\n",
+       "      <td>на проведение свадьбы</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>9</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2188.756445</td>\n",
+       "      <td>41</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>144425.938277</td>\n",
+       "      <td>покупка жилья для семьи</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children  days_employed  dob_years education  education_id  \\\n",
+       "0         1   -8437.673028         42    высшее             0   \n",
+       "1         1   -4024.803754         36   среднее             1   \n",
+       "2         0   -5623.422610         33   Среднее             1   \n",
+       "3         3   -4124.747207         32   среднее             1   \n",
+       "4         0  340266.072047         53   среднее             1   \n",
+       "5         0    -926.185831         27    высшее             0   \n",
+       "6         0   -2879.202052         43    высшее             0   \n",
+       "7         0    -152.779569         50   СРЕДНЕЕ             1   \n",
+       "8         2   -6929.865299         35    ВЫСШЕЕ             0   \n",
+       "9         0   -2188.756445         41   среднее             1   \n",
+       "\n",
+       "      family_status  family_status_id gender income_type  debt   total_income  \\\n",
+       "0   женат / замужем                 0      F   сотрудник     0  253875.639453   \n",
+       "1   женат / замужем                 0      F   сотрудник     0  112080.014102   \n",
+       "2   женат / замужем                 0      M   сотрудник     0  145885.952297   \n",
+       "3   женат / замужем                 0      M   сотрудник     0  267628.550329   \n",
+       "4  гражданский брак                 1      F   пенсионер     0  158616.077870   \n",
+       "5  гражданский брак                 1      M   компаньон     0  255763.565419   \n",
+       "6   женат / замужем                 0      F   компаньон     0  240525.971920   \n",
+       "7   женат / замужем                 0      M   сотрудник     0  135823.934197   \n",
+       "8  гражданский брак                 1      F   сотрудник     0   95856.832424   \n",
+       "9   женат / замужем                 0      M   сотрудник     0  144425.938277   \n",
+       "\n",
+       "                      purpose  \n",
+       "0               покупка жилья  \n",
+       "1     приобретение автомобиля  \n",
+       "2               покупка жилья  \n",
+       "3  дополнительное образование  \n",
+       "4             сыграть свадьбу  \n",
+       "5               покупка жилья  \n",
+       "6           операции с жильем  \n",
+       "7                 образование  \n",
+       "8       на проведение свадьбы  \n",
+       "9     покупка жилья для семьи  "
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.loc[df['total_income'].isna()]\n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "children               0\n",
+       "days_employed       2174\n",
+       "dob_years              0\n",
+       "education              0\n",
+       "education_id           0\n",
+       "family_status          0\n",
+       "family_status_id       0\n",
+       "gender                 0\n",
+       "income_type            0\n",
+       "debt                   0\n",
+       "total_income        2174\n",
+       "purpose                0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "- Интересная закономерность - почему количество пропусков в стаже и доходе равное.  \n",
+    " Возможно в следствии непредоставления документов / справок.  \n",
+    "- Проверим, что именно значение NaN в столбце total_income соотв. NaN в столбце days_employed  \n",
+    "- Из info() и данных по пропускам получаю 10% погрешность - удалять не буду, слишком много). \n",
+    "- В дальнейшем информация о стаже не нужна - оставлю ее как есть.\n",
+    "- Заменю пустые значения в total_income на соответсвующие медианы"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead tr th {\n",
+       "        text-align: left;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>total_income</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th>median</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>безработный</td>\n",
+       "      <td>131339.751676</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>в декрете</td>\n",
+       "      <td>53829.130729</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>госслужащий</td>\n",
+       "      <td>150447.935283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>172357.950966</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>118514.486412</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>предприниматель</td>\n",
+       "      <td>499163.144947</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>142594.396847</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>студент</td>\n",
+       "      <td>98201.625314</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       income_type   total_income\n",
+       "                           median\n",
+       "0      безработный  131339.751676\n",
+       "1        в декрете   53829.130729\n",
+       "2      госслужащий  150447.935283\n",
+       "3        компаньон  172357.950966\n",
+       "4        пенсионер  118514.486412\n",
+       "5  предприниматель  499163.144947\n",
+       "6        сотрудник  142594.396847\n",
+       "7          студент   98201.625314"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.groupby('income_type').agg({'total_income':['median']}).reset_index()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "median_incomes = df.groupby('income_type')['total_income'].median().to_dict()\n",
+    " \n",
+    "def filler_func(row):\n",
+    "    if pd.isna(row['total_income']):\n",
+    "        return median_incomes[row['income_type']]\n",
+    "    return row['total_income']\n",
+    " \n",
+    "df['total_income'] = df.apply(filler_func, axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "children               0\n",
+       "days_employed       2174\n",
+       "dob_years              0\n",
+       "education              0\n",
+       "education_id           0\n",
+       "family_status          0\n",
+       "family_status_id       0\n",
+       "gender                 0\n",
+       "income_type            0\n",
+       "debt                   0\n",
+       "total_income           0\n",
+       "purpose                0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1.2-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1.2. Заменим типы данных для дальнейшего удобства в использовании"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df['total_income'] = pd.to_numeric(df['total_income'], errors='coerce').astype('int')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 21525 entries, 0 to 21524\n",
+      "Data columns (total 12 columns):\n",
+      "children            21525 non-null int64\n",
+      "days_employed       19351 non-null float64\n",
+      "dob_years           21525 non-null int64\n",
+      "education           21525 non-null object\n",
+      "education_id        21525 non-null int64\n",
+      "family_status       21525 non-null object\n",
+      "family_status_id    21525 non-null int64\n",
+      "gender              21525 non-null object\n",
+      "income_type         21525 non-null object\n",
+      "debt                21525 non-null int64\n",
+      "total_income        21525 non-null int64\n",
+      "purpose             21525 non-null object\n",
+      "dtypes: float64(1), int64(6), object(5)\n",
+      "memory usage: 2.0+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:  \n",
+    " Заменила тип данных на целочисленный - чтобы в дальнейшем удобнее считать"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1.3-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1.3. Проверим данные на наличие дубликатов"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "54"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.duplicated().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>days_employed</th>\n",
+       "      <th>dob_years</th>\n",
+       "      <th>education</th>\n",
+       "      <th>education_id</th>\n",
+       "      <th>family_status</th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>debt</th>\n",
+       "      <th>total_income</th>\n",
+       "      <th>purpose</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-8437.673028</td>\n",
+       "      <td>42</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>f</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>253875</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-4024.803754</td>\n",
+       "      <td>36</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>f</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>112080</td>\n",
+       "      <td>приобретение автомобиля</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-5623.422610</td>\n",
+       "      <td>33</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>m</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>145885</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>-4124.747207</td>\n",
+       "      <td>32</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>m</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>267628</td>\n",
+       "      <td>дополнительное образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "      <td>340266.072047</td>\n",
+       "      <td>53</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>f</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>0</td>\n",
+       "      <td>158616</td>\n",
+       "      <td>сыграть свадьбу</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-926.185831</td>\n",
+       "      <td>27</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>m</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>255763</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2879.202052</td>\n",
+       "      <td>43</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>f</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>240525</td>\n",
+       "      <td>операции с жильем</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-152.779569</td>\n",
+       "      <td>50</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>m</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>135823</td>\n",
+       "      <td>образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "      <td>-6929.865299</td>\n",
+       "      <td>35</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>f</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>95856</td>\n",
+       "      <td>на проведение свадьбы</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>9</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2188.756445</td>\n",
+       "      <td>41</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>m</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>144425</td>\n",
+       "      <td>покупка жилья для семьи</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children  days_employed  dob_years education  education_id  \\\n",
+       "0         1   -8437.673028         42    высшее             0   \n",
+       "1         1   -4024.803754         36   среднее             1   \n",
+       "2         0   -5623.422610         33   среднее             1   \n",
+       "3         3   -4124.747207         32   среднее             1   \n",
+       "4         0  340266.072047         53   среднее             1   \n",
+       "5         0    -926.185831         27    высшее             0   \n",
+       "6         0   -2879.202052         43    высшее             0   \n",
+       "7         0    -152.779569         50   среднее             1   \n",
+       "8         2   -6929.865299         35    высшее             0   \n",
+       "9         0   -2188.756445         41   среднее             1   \n",
+       "\n",
+       "      family_status  family_status_id gender income_type  debt  total_income  \\\n",
+       "0   женат / замужем                 0      f   сотрудник     0        253875   \n",
+       "1   женат / замужем                 0      f   сотрудник     0        112080   \n",
+       "2   женат / замужем                 0      m   сотрудник     0        145885   \n",
+       "3   женат / замужем                 0      m   сотрудник     0        267628   \n",
+       "4  гражданский брак                 1      f   пенсионер     0        158616   \n",
+       "5  гражданский брак                 1      m   компаньон     0        255763   \n",
+       "6   женат / замужем                 0      f   компаньон     0        240525   \n",
+       "7   женат / замужем                 0      m   сотрудник     0        135823   \n",
+       "8  гражданский брак                 1      f   сотрудник     0         95856   \n",
+       "9   женат / замужем                 0      m   сотрудник     0        144425   \n",
+       "\n",
+       "                      purpose  \n",
+       "0               покупка жилья  \n",
+       "1     приобретение автомобиля  \n",
+       "2               покупка жилья  \n",
+       "3  дополнительное образование  \n",
+       "4             сыграть свадьбу  \n",
+       "5               покупка жилья  \n",
+       "6           операции с жильем  \n",
+       "7                 образование  \n",
+       "8       на проведение свадьбы  \n",
+       "9     покупка жилья для семьи  "
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['education'] = df.education.astype(str).str.lower()\n",
+    "df['family_status'] = df.family_status.astype(str).str.lower()\n",
+    "df['gender'] = df.gender.astype(str).str.lower()\n",
+    "df['income_type'] = df.income_type.astype(str).str.lower()\n",
+    "df['purpose'] = df.purpose.astype(str).str.lower()\n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = df.drop_duplicates().reset_index(drop=True)\n",
+    "df.duplicated().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "1. Проверила на дубликаты\n",
+    "2. Нашла дубликаты и удалила (удалила строки с дубликатами, обнулила и их индексы)\n",
+    "3. Проверила\n",
+    " \n",
+    "Предположу, что дубликаты - это технические ошибки - их всего 54 на объем 21525 значений "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1.4-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1.4. Проведем лемматизацию данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[автомобиль, \\n]                                          973\n",
+       "[свадьба, \\n]                                             797\n",
+       "[на,  , проведение,  , свадьба, \\n]                       777\n",
+       "[сыграть,  , свадьба, \\n]                                 774\n",
+       "[операция,  , с,  , недвижимость, \\n]                     676\n",
+       "[покупка,  , коммерческий,  , недвижимость, \\n]           664\n",
+       "[операция,  , с,  , жилье, \\n]                            653\n",
+       "[покупка,  , жилье,  , для,  , сдача, \\n]                 653\n",
+       "[операция,  , с,  , коммерческий,  , недвижимость, \\n]    651\n",
+       "[покупка,  , жилье, \\n]                                   647\n",
+       "[жилье, \\n]                                               647\n",
+       "[покупка,  , жилье,  , для,  , семья, \\n]                 641\n",
+       "[строительство,  , собственный,  , недвижимость, \\n]      635\n",
+       "[недвижимость, \\n]                                        634\n",
+       "[операция,  , со,  , свой,  , недвижимость, \\n]           630\n",
+       "[строительство,  , жилой,  , недвижимость, \\n]            626\n",
+       "[покупка,  , недвижимость, \\n]                            624\n",
+       "[строительство,  , недвижимость, \\n]                      620\n",
+       "[покупка,  , свой,  , жилье, \\n]                          620\n",
+       "[ремонт,  , жилье, \\n]                                    612\n",
+       "[покупка,  , жилой,  , недвижимость, \\n]                  607\n",
+       "[на,  , покупка,  , свой,  , автомобиль, \\n]              505\n",
+       "[заниматься,  , высокий,  , образование, \\n]              496\n",
+       "[сделка,  , с,  , подержанный,  , автомобиль, \\n]         489\n",
+       "[свой,  , автомобиль, \\n]                                 480\n",
+       "[на,  , покупка,  , подержать,  , автомобиль, \\n]         479\n",
+       "[на,  , покупка,  , автомобиль, \\n]                       472\n",
+       "[дополнительный,  , образование, \\n]                      462\n",
+       "[приобретение,  , автомобиль, \\n]                         462\n",
+       "[сделка,  , с,  , автомобиль, \\n]                         455\n",
+       "[высокий,  , образование, \\n]                             453\n",
+       "[получение,  , дополнительный,  , образование, \\n]        447\n",
+       "[образование, \\n]                                         447\n",
+       "[получение,  , образование, \\n]                           443\n",
+       "[профильный,  , образование, \\n]                          436\n",
+       "[получение,  , высокий,  , образование, \\n]               426\n",
+       "[заниматься,  , образование, \\n]                          412\n",
+       "Name: purpose_lemma, dtype: int64"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import pandas as pd \n",
+    "df = pd.read_csv('/datasets/data.csv')\n",
+    "from pymystem3 import Mystem\n",
+    "m = Mystem() \n",
+    "from collections import Counter\n",
+    "#Найдем леммы и посчитаем их количсетво по столбцу purpose\n",
+    "df['purpose_lemma'] = df['purpose'].apply(m.lemmatize)\n",
+    "df['purpose_lemma'].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "4 потребности заемщиков требуют кредитования - \n",
+    " - операции с недвижимостью \n",
+    " - автомобили \n",
+    " - образование \n",
+    " - свадьбы"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='1.5-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 1.5. Категоризируем данные  \n",
+    " При просмотре списка лемм видно, что разделить можно на 4 большие категории все запросы"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>days_employed</th>\n",
+       "      <th>dob_years</th>\n",
+       "      <th>education</th>\n",
+       "      <th>education_id</th>\n",
+       "      <th>family_status</th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>debt</th>\n",
+       "      <th>total_income</th>\n",
+       "      <th>purpose</th>\n",
+       "      <th>purpose_lemma</th>\n",
+       "      <th>purpose_category</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-8437.673028</td>\n",
+       "      <td>42</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>253875.639453</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-4024.803754</td>\n",
+       "      <td>36</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>112080.014102</td>\n",
+       "      <td>приобретение автомобиля</td>\n",
+       "      <td>[приобретение,  , автомобиль, \\n]</td>\n",
+       "      <td>автомобиль</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-5623.422610</td>\n",
+       "      <td>33</td>\n",
+       "      <td>Среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>145885.952297</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>-4124.747207</td>\n",
+       "      <td>32</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>267628.550329</td>\n",
+       "      <td>дополнительное образование</td>\n",
+       "      <td>[дополнительный,  , образование, \\n]</td>\n",
+       "      <td>образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "      <td>340266.072047</td>\n",
+       "      <td>53</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>0</td>\n",
+       "      <td>158616.077870</td>\n",
+       "      <td>сыграть свадьбу</td>\n",
+       "      <td>[сыграть,  , свадьба, \\n]</td>\n",
+       "      <td>свадьба</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-926.185831</td>\n",
+       "      <td>27</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>M</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>255763.565419</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2879.202052</td>\n",
+       "      <td>43</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>240525.971920</td>\n",
+       "      <td>операции с жильем</td>\n",
+       "      <td>[операция,  , с,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-152.779569</td>\n",
+       "      <td>50</td>\n",
+       "      <td>СРЕДНЕЕ</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>135823.934197</td>\n",
+       "      <td>образование</td>\n",
+       "      <td>[образование, \\n]</td>\n",
+       "      <td>образование</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "      <td>-6929.865299</td>\n",
+       "      <td>35</td>\n",
+       "      <td>ВЫСШЕЕ</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>95856.832424</td>\n",
+       "      <td>на проведение свадьбы</td>\n",
+       "      <td>[на,  , проведение,  , свадьба, \\n]</td>\n",
+       "      <td>свадьба</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>9</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2188.756445</td>\n",
+       "      <td>41</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>144425.938277</td>\n",
+       "      <td>покупка жилья для семьи</td>\n",
+       "      <td>[покупка,  , жилье,  , для,  , семья, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children  days_employed  dob_years education  education_id  \\\n",
+       "0         1   -8437.673028         42    высшее             0   \n",
+       "1         1   -4024.803754         36   среднее             1   \n",
+       "2         0   -5623.422610         33   Среднее             1   \n",
+       "3         3   -4124.747207         32   среднее             1   \n",
+       "4         0  340266.072047         53   среднее             1   \n",
+       "5         0    -926.185831         27    высшее             0   \n",
+       "6         0   -2879.202052         43    высшее             0   \n",
+       "7         0    -152.779569         50   СРЕДНЕЕ             1   \n",
+       "8         2   -6929.865299         35    ВЫСШЕЕ             0   \n",
+       "9         0   -2188.756445         41   среднее             1   \n",
+       "\n",
+       "      family_status  family_status_id gender income_type  debt   total_income  \\\n",
+       "0   женат / замужем                 0      F   сотрудник     0  253875.639453   \n",
+       "1   женат / замужем                 0      F   сотрудник     0  112080.014102   \n",
+       "2   женат / замужем                 0      M   сотрудник     0  145885.952297   \n",
+       "3   женат / замужем                 0      M   сотрудник     0  267628.550329   \n",
+       "4  гражданский брак                 1      F   пенсионер     0  158616.077870   \n",
+       "5  гражданский брак                 1      M   компаньон     0  255763.565419   \n",
+       "6   женат / замужем                 0      F   компаньон     0  240525.971920   \n",
+       "7   женат / замужем                 0      M   сотрудник     0  135823.934197   \n",
+       "8  гражданский брак                 1      F   сотрудник     0   95856.832424   \n",
+       "9   женат / замужем                 0      M   сотрудник     0  144425.938277   \n",
+       "\n",
+       "                      purpose                              purpose_lemma  \\\n",
+       "0               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "1     приобретение автомобиля          [приобретение,  , автомобиль, \\n]   \n",
+       "2               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "3  дополнительное образование       [дополнительный,  , образование, \\n]   \n",
+       "4             сыграть свадьбу                  [сыграть,  , свадьба, \\n]   \n",
+       "5               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "6           операции с жильем             [операция,  , с,  , жилье, \\n]   \n",
+       "7                 образование                          [образование, \\n]   \n",
+       "8       на проведение свадьбы        [на,  , проведение,  , свадьба, \\n]   \n",
+       "9     покупка жилья для семьи  [покупка,  , жилье,  , для,  , семья, \\n]   \n",
+       "\n",
+       "  purpose_category  \n",
+       "0     недвижимость  \n",
+       "1       автомобиль  \n",
+       "2     недвижимость  \n",
+       "3      образование  \n",
+       "4          свадьба  \n",
+       "5     недвижимость  \n",
+       "6     недвижимость  \n",
+       "7      образование  \n",
+       "8          свадьба  \n",
+       "9     недвижимость  "
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def purpose_categorizer(purpose):\n",
+    "    purpose = m.lemmatize(purpose)\n",
+    "    purpose = \" \".join(purpose)\n",
+    "    if 'автомобиль' in purpose:\n",
+    "        return 'автомобиль'\n",
+    "    if 'образование' in purpose:\n",
+    "        return 'образование'\n",
+    "    if 'недвижимость' in purpose or 'жилье' in purpose:\n",
+    "        return 'недвижимость'\n",
+    "    else:\n",
+    "        return 'свадьба'\n",
+    " \n",
+    "df['purpose_category'] = df['purpose'].apply(purpose_categorizer)       \n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Посмотрим какая цель получения кредита наиболее распространена "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "недвижимость    10840\n",
+       "автомобиль       4315\n",
+       "образование      4022\n",
+       "свадьба          2348\n",
+       "Name: purpose_category, dtype: int64"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['purpose_category'].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Напишем функцию распределив зп по объемам"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>days_employed</th>\n",
+       "      <th>dob_years</th>\n",
+       "      <th>education</th>\n",
+       "      <th>education_id</th>\n",
+       "      <th>family_status</th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>income_type</th>\n",
+       "      <th>debt</th>\n",
+       "      <th>total_income</th>\n",
+       "      <th>purpose</th>\n",
+       "      <th>purpose_lemma</th>\n",
+       "      <th>purpose_category</th>\n",
+       "      <th>total_income_category</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-8437.673028</td>\n",
+       "      <td>42</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>253875.639453</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>Доход высокий</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-4024.803754</td>\n",
+       "      <td>36</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>112080.014102</td>\n",
+       "      <td>приобретение автомобиля</td>\n",
+       "      <td>[приобретение,  , автомобиль, \\n]</td>\n",
+       "      <td>автомобиль</td>\n",
+       "      <td>Доход средний</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-5623.422610</td>\n",
+       "      <td>33</td>\n",
+       "      <td>Среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>145885.952297</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>Доход средний</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>-4124.747207</td>\n",
+       "      <td>32</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>267628.550329</td>\n",
+       "      <td>дополнительное образование</td>\n",
+       "      <td>[дополнительный,  , образование, \\n]</td>\n",
+       "      <td>образование</td>\n",
+       "      <td>Доход высокий</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "      <td>340266.072047</td>\n",
+       "      <td>53</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>пенсионер</td>\n",
+       "      <td>0</td>\n",
+       "      <td>158616.077870</td>\n",
+       "      <td>сыграть свадьбу</td>\n",
+       "      <td>[сыграть,  , свадьба, \\n]</td>\n",
+       "      <td>свадьба</td>\n",
+       "      <td>Доход средний</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-926.185831</td>\n",
+       "      <td>27</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>M</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>255763.565419</td>\n",
+       "      <td>покупка жилья</td>\n",
+       "      <td>[покупка,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>Доход высокий</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>6</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2879.202052</td>\n",
+       "      <td>43</td>\n",
+       "      <td>высшее</td>\n",
+       "      <td>0</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>F</td>\n",
+       "      <td>компаньон</td>\n",
+       "      <td>0</td>\n",
+       "      <td>240525.971920</td>\n",
+       "      <td>операции с жильем</td>\n",
+       "      <td>[операция,  , с,  , жилье, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>Доход высокий</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>7</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-152.779569</td>\n",
+       "      <td>50</td>\n",
+       "      <td>СРЕДНЕЕ</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>135823.934197</td>\n",
+       "      <td>образование</td>\n",
+       "      <td>[образование, \\n]</td>\n",
+       "      <td>образование</td>\n",
+       "      <td>Доход средний</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "      <td>-6929.865299</td>\n",
+       "      <td>35</td>\n",
+       "      <td>ВЫСШЕЕ</td>\n",
+       "      <td>0</td>\n",
+       "      <td>гражданский брак</td>\n",
+       "      <td>1</td>\n",
+       "      <td>F</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>95856.832424</td>\n",
+       "      <td>на проведение свадьбы</td>\n",
+       "      <td>[на,  , проведение,  , свадьба, \\n]</td>\n",
+       "      <td>свадьба</td>\n",
+       "      <td>Доход низкий</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>9</td>\n",
+       "      <td>0</td>\n",
+       "      <td>-2188.756445</td>\n",
+       "      <td>41</td>\n",
+       "      <td>среднее</td>\n",
+       "      <td>1</td>\n",
+       "      <td>женат / замужем</td>\n",
+       "      <td>0</td>\n",
+       "      <td>M</td>\n",
+       "      <td>сотрудник</td>\n",
+       "      <td>0</td>\n",
+       "      <td>144425.938277</td>\n",
+       "      <td>покупка жилья для семьи</td>\n",
+       "      <td>[покупка,  , жилье,  , для,  , семья, \\n]</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>Доход средний</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children  days_employed  dob_years education  education_id  \\\n",
+       "0         1   -8437.673028         42    высшее             0   \n",
+       "1         1   -4024.803754         36   среднее             1   \n",
+       "2         0   -5623.422610         33   Среднее             1   \n",
+       "3         3   -4124.747207         32   среднее             1   \n",
+       "4         0  340266.072047         53   среднее             1   \n",
+       "5         0    -926.185831         27    высшее             0   \n",
+       "6         0   -2879.202052         43    высшее             0   \n",
+       "7         0    -152.779569         50   СРЕДНЕЕ             1   \n",
+       "8         2   -6929.865299         35    ВЫСШЕЕ             0   \n",
+       "9         0   -2188.756445         41   среднее             1   \n",
+       "\n",
+       "      family_status  family_status_id gender income_type  debt   total_income  \\\n",
+       "0   женат / замужем                 0      F   сотрудник     0  253875.639453   \n",
+       "1   женат / замужем                 0      F   сотрудник     0  112080.014102   \n",
+       "2   женат / замужем                 0      M   сотрудник     0  145885.952297   \n",
+       "3   женат / замужем                 0      M   сотрудник     0  267628.550329   \n",
+       "4  гражданский брак                 1      F   пенсионер     0  158616.077870   \n",
+       "5  гражданский брак                 1      M   компаньон     0  255763.565419   \n",
+       "6   женат / замужем                 0      F   компаньон     0  240525.971920   \n",
+       "7   женат / замужем                 0      M   сотрудник     0  135823.934197   \n",
+       "8  гражданский брак                 1      F   сотрудник     0   95856.832424   \n",
+       "9   женат / замужем                 0      M   сотрудник     0  144425.938277   \n",
+       "\n",
+       "                      purpose                              purpose_lemma  \\\n",
+       "0               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "1     приобретение автомобиля          [приобретение,  , автомобиль, \\n]   \n",
+       "2               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "3  дополнительное образование       [дополнительный,  , образование, \\n]   \n",
+       "4             сыграть свадьбу                  [сыграть,  , свадьба, \\n]   \n",
+       "5               покупка жилья                    [покупка,  , жилье, \\n]   \n",
+       "6           операции с жильем             [операция,  , с,  , жилье, \\n]   \n",
+       "7                 образование                          [образование, \\n]   \n",
+       "8       на проведение свадьбы        [на,  , проведение,  , свадьба, \\n]   \n",
+       "9     покупка жилья для семьи  [покупка,  , жилье,  , для,  , семья, \\n]   \n",
+       "\n",
+       "  purpose_category total_income_category  \n",
+       "0     недвижимость         Доход высокий  \n",
+       "1       автомобиль         Доход средний  \n",
+       "2     недвижимость         Доход средний  \n",
+       "3      образование         Доход высокий  \n",
+       "4          свадьба         Доход средний  \n",
+       "5     недвижимость         Доход высокий  \n",
+       "6     недвижимость         Доход высокий  \n",
+       "7      образование         Доход средний  \n",
+       "8          свадьба          Доход низкий  \n",
+       "9     недвижимость         Доход средний  "
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def total_income_categorizer(total_income):\n",
+    "    if total_income <= 100000:\n",
+    "        return 'Доход низкий'\n",
+    "    if total_income >= 100000 and total_income <=200000:\n",
+    "        return 'Доход средний'    \n",
+    "    else:\n",
+    "        return 'Доход высокий'\n",
+    " \n",
+    "df['total_income_category']= df['total_income'].apply(total_income_categorizer)        \n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Посчитаем количество категорий доходов "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Доход средний    9822\n",
+       "Доход высокий    7240\n",
+       "Доход низкий     4463\n",
+       "Name: total_income_category, dtype: int64"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['total_income_category'].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='2-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 2. Ответим на непосредственные вопросы заказчика"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Есть ли зависимость между наличием детей и возвратом кредита в срок?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Проверим сразу все ли значения по столбцу children адекватные"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([ 1,  0,  3,  2, -1,  4, 20,  5])"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['children'].unique()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Думаю значения -1 и 20 - технические ошибки.      \n",
+    " Предполагаю, что -1 - это опечатка и правильно 1, и 20 = 2 (тоже опечатка)  \n",
+    "  Произведу замены"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([1, 0, 3, 2, 4, 5])"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['children'] = df['children'].replace(-1, 1)\n",
+    "df['children'] = df['children'].replace(20, 2)\n",
+    "df['children'].unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>children</th>\n",
+       "      <th>debt</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.075129</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0.091470</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0.094791</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>3</td>\n",
+       "      <td>0.081818</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>4</td>\n",
+       "      <td>4</td>\n",
+       "      <td>0.097561</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>5</td>\n",
+       "      <td>5</td>\n",
+       "      <td>0.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   children      debt\n",
+       "0         0  0.075129\n",
+       "1         1  0.091470\n",
+       "2         2  0.094791\n",
+       "3         3  0.081818\n",
+       "4         4  0.097561\n",
+       "5         5  0.000000"
+      ]
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "children_pivot = df.pivot_table(index=['children'], values = 'debt' , aggfunc = 'mean')\n",
+    "children_pivot.head(10).reset_index()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "С появлением детей доля просрочек по выплатам увеличивается на ~ 2%"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Есть ли зависимость между семейным положением и возвратом кредита в срок?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "По логике таблицы должны присутствоватть только значени0 и 1 - проверим так ли это:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([0, 1, 2, 3, 4])"
+      ]
+     },
+     "execution_count": 21,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['family_status_id'].unique()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "По логике все тех же опечаток - заменим отличные от 0 на 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([0, 1])"
+      ]
+     },
+     "execution_count": 22,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df['family_status_id'] = df['family_status_id'].replace(2, 1)\n",
+    "df['family_status_id'] = df['family_status_id'].replace(3, 1)\n",
+    "df['family_status_id'] = df['family_status_id'].replace(4, 1)\n",
+    "df['family_status_id'].unique()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Посмотрим сводную таблицу"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>family_status_id</th>\n",
+       "      <th>debt</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.075202</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0.088573</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   family_status_id      debt\n",
+       "0                 0  0.075202\n",
+       "1                 1  0.088573"
+      ]
+     },
+     "execution_count": 23,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "family_status_pivot = df.pivot_table(index=['family_status_id'], values = 'debt' , aggfunc = 'mean')\n",
+    "family_status_pivot.head(10).reset_index()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "По данным сводной таблицы видим, что семейные заемщики на чуть более 1% выплачивают хуже. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Есть ли зависимость между уровнем дохода и возвратом кредита в срок?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Соберем в сводной таблице данные по наличию долга и по категориям доходов"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>total_income_category</th>\n",
+       "      <th>debt</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>Доход высокий</td>\n",
+       "      <td>0.072928</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>Доход низкий</td>\n",
+       "      <td>0.079319</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>Доход средний</td>\n",
+       "      <td>0.087457</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  total_income_category      debt\n",
+       "0         Доход высокий  0.072928\n",
+       "1          Доход низкий  0.079319\n",
+       "2         Доход средний  0.087457"
+      ]
+     },
+     "execution_count": 24,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "total_income_category_pivot = df.pivot_table(index=['total_income_category'], values = 'debt' , aggfunc = 'mean')\n",
+    "total_income_category_pivot.head(10).reset_index()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "Зависимость слудующая : чем выше доход - тем меньший процент долга.  \n",
+    "  Интересно, что на уровне среднего дохода так много берут кредиты -  \n",
+    "   так верят в свои силы его вернуть, а по итогу почти каждый 8 не выплачивает в срок "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Как разные цели кредита влияют на его возврат в срок?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Соберем в сводной таблице данные по наличию долга и целям кредитования"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>purpose_category</th>\n",
+       "      <th>debt</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <td>0</td>\n",
+       "      <td>автомобиль</td>\n",
+       "      <td>0.093395</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>1</td>\n",
+       "      <td>недвижимость</td>\n",
+       "      <td>0.072140</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>2</td>\n",
+       "      <td>образование</td>\n",
+       "      <td>0.091994</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <td>3</td>\n",
+       "      <td>свадьба</td>\n",
+       "      <td>0.079216</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  purpose_category      debt\n",
+       "0       автомобиль  0.093395\n",
+       "1     недвижимость  0.072140\n",
+       "2      образование  0.091994\n",
+       "3          свадьба  0.079216"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "purpose_category_pivot = df.pivot_table(index=['purpose_category'],values = 'debt' , aggfunc = 'mean')\n",
+    "purpose_category_pivot.head(10).reset_index()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Выводы:\n",
+    "По логике выдачи сводной таблицы можно заметить , что:\n",
+    "1. Наибольший % по неуплате в срок - это категория \"автомобили\". Предположу, что данная покупка очень дорогая в обслуживании (бензин, мойка, ТО, страховки) - это очень большие , часто непредвиденные, расходы и мешают заемщикам выплачивать  в срок.\n",
+    "2. Наименьший % у категории недвижимость - тут все понятно: вопрос недвижимости более необходимый, чем прочие цели и более дорогостоящий. К тому же это актив , который позже можно выше в стоимости продать или сдавать. По итогу, к вопросу недвижимости заемщики подходят более отвественно - быстрее выплачивают кредиты и не собирают долги.\n",
+    "3. Высокий процент долгов по образованию можно объяснить тем, что это как инвестиция. Девиденды в виде , например, высоких зарплат после повышения квалификации/прохождении переквалификации придут позже и кредит будет закрыт\n",
+    "4. Невысокий процент по категории цели свадьба (в сранении с теми целями, что мы имеем) обусловлен тем, что это не столь большие суммы как на покупку квартиры , например, а так же тем, что деньги полученные в качестве подарка на свадьбу молодожены в том числе вкладывают в счет погашения долга."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<a id='3-bullet'></a>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 3. Общие выводы"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "В данной работе мы определили как разные цели влияют на возврат долга в срока, а так же посмотрели есть ли зависимость между семейным статусом и наличием детей на показатель отсутствия долга.  \n",
+    " \n",
+    "Для начала работы подготовили данные:\n",
+    " \n",
+    " 1. Открыли и прочитали файл\n",
+    " 2. Обнаружили пропущенные данные в столбцах , котрые показывают стаж и доход - предположу, что данных нет - так как заемщиком в банк не были предоставленны подтверждающие документы. Заменили пропущенные значения в столбце по доходам на медианы, предварительно рассортировав их по категориям типов работников\n",
+    " 3. Обнаружили неудобный для проведения вычислений тип данных по столбцу доходы - заменили на целочисленный\n",
+    " 4. Проработали дубликаты, заменив регистры во всем массиве данных. Было найдено 54 дубликата записей - все удалены, так как процент дубликатов к общему объему данных ничтожно мал - появление дубликатов \n",
+    " 5. Провели лемматизацию и в дальнейшем категоризировали данные по полученным - чтобы в итоге увидеть цели, на которые заемщики берут кредиты:\n",
+    "  - операции с недвижимостью\n",
+    "  - авто\n",
+    "  - образование\n",
+    "  - свадьбы\n",
+    " 6. Так же провели категоризацию по доходам заемщиков - чтобы классифицировать доходы на 3 категории, для дальнейшего удобства и выяснили, что большинство наших заемщиков имеют средний доход\n",
+    "  \n",
+    "Главные выводы:\n",
+    "    \n",
+    "  1. Если в семье есть дети - процент возврата кредита в срок снижается ~1,5-2% банк не досчитается планово\n",
+    "  2. Семейное положение так же дает о себе знать, когда речь идет о погащении кредита в срок: семейные заемщики на чуть более 1% выплачивают хуже\n",
+    "  3. Меньший процент долга по возврату кредита в срок приходится на тех, у кого высокий доход - оно и логично. Те, у кого доход низкий если и берут кредиты, то имеют неосторожность не уплатить в срок. Те же у кого доход средний нив чем себе не отказывают - живут в кредит и не торопятся возвращать долг в установленные сроки - процент просрочек на 1,5% выше чем у заемщиков с высоким доходом. Заемщики с низким доходом имеют показатель возврата в срок на 0,8% лучше чем те, у кого доход средний.\n",
+    "  4. По целям кредитования  получается результат следующий:\n",
+    "  - недвижимость как более дорогостоящая и необходимая категория выплачивается с наименьшими просрочками - думаю здесь также большую роль играет, что часть кредита погашается материнским капиталом и деньгами полученными после возврата 3-НДФЛ\n",
+    "  - автомобили имеют самый высокий процент неуплат в срок - это объясняется тем, что автомобиль часто непредвиденные расходы, и , к сожалению , не всегда зависящий от заемщика (авария, например, не по вине заемщика и нужен дорогостоящий ремонт, так как машина в данном случае - это необходимоть, а не предмет роскоши)\n",
+    "  - образование - это все же некая инвестиция, тут ставка заемщика на ожидаемый рост доходов после прохождения обучения - поэтому рост числа неуплат объясним и достаточно высок \n",
+    "  - свадьбы - торжество знатное и денег требует немалых. Если накопить не получилось и берут кредит, значит с доходами не все так радужно или сроки/устои поджимают (беременность или сыграть свадьбу пока лето, например)\n",
+    "  \n",
+    "##### Рекомендации:\n",
+    "   \n",
+    "  Для спокойствия банка думаю нужно тщательнее отбирать заемщиков сразу параметрам семейное положение, наличие детей и доходу.\n",
+    "  таким образом получим:\n",
+    "  1. Семье с 2мя детьми и доходом заемщика ниже среднего не стоит одобрять кредит на авто стоимостью от 1 000 000 рублей - таким образом, увеличится процент возврата кредитов по категории Автомобили\n",
+    "  2. По части образования - банки часто выступают партнерами различный образовательных учереждений  платформ, что позволяет подготовить для студентов выгодные им условия кредитования. Возможно стоит рассмотреть такую возможность и тогда снизится процент по неуплате в данно категории кредитования\n",
+    "  3. Аналогично схеме с образовательными ресурсами банки выступают партнерами застройщиков жилья и агентств недвижимости , что также позволяет предложить потенциальным заемщикам удобные схемы кредитования (сроки, ежемесячные платежи, возможности менять дату регулярного платежа, отсрочки и прочее)\n",
+    "   \n",
+    "##### Рекомендации по технической составляющей:\n",
+    "   \n",
+    "   1. Просмотреть код, который проставляет значения  столбце family_status_id - таким образом, чтобы значение было или = 0 или = 1\n",
+    "   2. Просмотреть форму внесения данных по столбцу children и исключить возможности для опечатки\n",
+    "  \n",
+    " \n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "ExecuteTimeLog": [
+   {
+    "duration": 342,
+    "start_time": "2021-07-01T09:50:36.696Z"
+   },
+   {
+    "duration": 316,
+    "start_time": "2021-07-01T10:00:11.304Z"
+   },
+   {
+    "duration": 908,
+    "start_time": "2021-07-01T10:05:27.640Z"
+   },
+   {
+    "duration": 17,
+    "start_time": "2021-07-01T10:05:28.551Z"
+   },
+   {
+    "duration": 22,
+    "start_time": "2021-07-01T10:05:28.573Z"
+   },
+   {
+    "duration": 15,
+    "start_time": "2021-07-01T10:05:28.599Z"
+   },
+   {
+    "duration": 61,
+    "start_time": "2021-07-01T10:05:28.616Z"
+   },
+   {
+    "duration": 909,
+    "start_time": "2021-07-01T10:05:28.679Z"
+   },
+   {
+    "duration": 18,
+    "start_time": "2021-07-01T10:05:29.591Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2021-07-01T10:05:29.614Z"
+   },
+   {
+    "duration": 47,
+    "start_time": "2021-07-01T10:05:29.624Z"
+   },
+   {
+    "duration": 34,
+    "start_time": "2021-07-01T10:05:29.674Z"
+   },
+   {
+    "duration": 193,
+    "start_time": "2021-07-01T10:05:29.711Z"
+   },
+   {
+    "duration": 105,
+    "start_time": "2021-07-01T10:05:29.907Z"
+   },
+   {
+    "duration": 4654,
+    "start_time": "2021-07-01T10:05:30.015Z"
+   },
+   {
+    "duration": 3674,
+    "start_time": "2021-07-01T10:05:34.671Z"
+   },
+   {
+    "duration": 112,
+    "start_time": "2021-07-01T10:05:38.347Z"
+   },
+   {
+    "duration": 96,
+    "start_time": "2021-07-01T10:05:38.366Z"
+   },
+   {
+    "duration": 88,
+    "start_time": "2021-07-01T10:05:38.375Z"
+   },
+   {
+    "duration": 83,
+    "start_time": "2021-07-01T10:05:38.382Z"
+   },
+   {
+    "duration": 76,
+    "start_time": "2021-07-01T10:05:38.390Z"
+   },
+   {
+    "duration": 67,
+    "start_time": "2021-07-01T10:05:38.400Z"
+   },
+   {
+    "duration": 62,
+    "start_time": "2021-07-01T10:05:38.407Z"
+   },
+   {
+    "duration": 46,
+    "start_time": "2021-07-01T10:05:38.424Z"
+   },
+   {
+    "duration": 40,
+    "start_time": "2021-07-01T10:05:38.431Z"
+   },
+   {
+    "duration": 38,
+    "start_time": "2021-07-01T10:05:38.435Z"
+   },
+   {
+    "duration": 33,
+    "start_time": "2021-07-01T10:05:38.441Z"
+   },
+   {
+    "duration": 11,
+    "start_time": "2021-07-01T10:05:51.896Z"
+   },
+   {
+    "duration": 85,
+    "start_time": "2021-07-01T10:05:56.219Z"
+   },
+   {
+    "duration": 20,
+    "start_time": "2021-07-01T10:05:56.306Z"
+   },
+   {
+    "duration": 55,
+    "start_time": "2021-07-01T10:05:56.329Z"
+   },
+   {
+    "duration": 13,
+    "start_time": "2021-07-01T10:05:56.387Z"
+   },
+   {
+    "duration": 18,
+    "start_time": "2021-07-01T10:05:56.402Z"
+   },
+   {
+    "duration": 657,
+    "start_time": "2021-07-01T10:05:56.422Z"
+   },
+   {
+    "duration": 12,
+    "start_time": "2021-07-01T10:05:57.082Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2021-07-01T10:05:57.098Z"
+   },
+   {
+    "duration": 34,
+    "start_time": "2021-07-01T10:05:57.106Z"
+   },
+   {
+    "duration": 38,
+    "start_time": "2021-07-01T10:05:57.142Z"
+   },
+   {
+    "duration": 118,
+    "start_time": "2021-07-01T10:05:57.182Z"
+   },
+   {
+    "duration": 71,
+    "start_time": "2021-07-01T10:05:57.303Z"
+   },
+   {
+    "duration": 4672,
+    "start_time": "2021-07-01T10:05:57.377Z"
+   },
+   {
+    "duration": 3648,
+    "start_time": "2021-07-01T10:06:02.051Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2021-07-01T10:06:05.702Z"
+   },
+   {
+    "duration": 78,
+    "start_time": "2021-07-01T10:06:05.714Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2021-07-01T10:06:05.794Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2021-07-01T10:06:05.806Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2021-07-01T10:06:05.819Z"
+   },
+   {
+    "duration": 25,
+    "start_time": "2021-07-01T10:06:05.869Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2021-07-01T10:06:05.897Z"
+   },
+   {
+    "duration": 16,
+    "start_time": "2021-07-01T10:06:05.908Z"
+   },
+   {
+    "duration": 21,
+    "start_time": "2021-07-01T10:06:05.966Z"
+   },
+   {
+    "duration": 26,
+    "start_time": "2021-07-01T10:06:05.990Z"
+   },
+   {
+    "duration": 50,
+    "start_time": "2021-07-01T10:06:06.018Z"
+   },
+   {
+    "duration": 404,
+    "start_time": "2021-07-01T10:09:22.268Z"
+   },
+   {
+    "duration": 21,
+    "start_time": "2021-07-01T10:09:31.119Z"
+   },
+   {
+    "duration": 20,
+    "start_time": "2021-07-01T10:11:26.757Z"
+   },
+   {
+    "duration": 20,
+    "start_time": "2021-07-01T10:12:02.500Z"
+   },
+   {
+    "duration": 23,
+    "start_time": "2021-07-01T10:12:49.151Z"
+   },
+   {
+    "duration": 22,
+    "start_time": "2021-07-01T10:13:31.873Z"
+   },
+   {
+    "duration": 898,
+    "start_time": "2021-07-01T10:14:17.466Z"
+   },
+   {
+    "duration": 17,
+    "start_time": "2021-07-01T10:14:18.367Z"
+   },
+   {
+    "duration": 22,
+    "start_time": "2021-07-01T10:14:18.387Z"
+   },
+   {
+    "duration": 13,
+    "start_time": "2021-07-01T10:14:18.411Z"
+   },
+   {
+    "duration": 59,
+    "start_time": "2021-07-01T10:14:18.426Z"
+   },
+   {
+    "duration": 646,
+    "start_time": "2021-07-01T10:14:18.489Z"
+   },
+   {
+    "duration": 12,
+    "start_time": "2021-07-01T10:14:19.137Z"
+   },
+   {
+    "duration": 18,
+    "start_time": "2021-07-01T10:14:19.153Z"
+   },
+   {
+    "duration": 18,
+    "start_time": "2021-07-01T10:14:19.175Z"
+   },
+   {
+    "duration": 24,
+    "start_time": "2021-07-01T10:14:19.196Z"
+   },
+   {
+    "duration": 147,
+    "start_time": "2021-07-01T10:14:19.223Z"
+   },
+   {
+    "duration": 65,
+    "start_time": "2021-07-01T10:14:19.374Z"
+   },
+   {
+    "duration": 4594,
+    "start_time": "2021-07-01T10:14:19.442Z"
+   },
+   {
+    "duration": 3615,
+    "start_time": "2021-07-01T10:14:24.039Z"
+   },
+   {
+    "duration": 18,
+    "start_time": "2021-07-01T10:14:27.657Z"
+   },
+   {
+    "duration": 41,
+    "start_time": "2021-07-01T10:14:27.677Z"
+   },
+   {
+    "duration": 11,
+    "start_time": "2021-07-01T10:14:27.720Z"
+   },
+   {
+    "duration": 40,
+    "start_time": "2021-07-01T10:14:27.733Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2021-07-01T10:14:27.775Z"
+   },
+   {
+    "duration": 25,
+    "start_time": "2021-07-01T10:14:27.786Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2021-07-01T10:14:27.814Z"
+   },
+   {
+    "duration": 47,
+    "start_time": "2021-07-01T10:14:27.822Z"
+   },
+   {
+    "duration": 21,
+    "start_time": "2021-07-01T10:14:27.873Z"
+   },
+   {
+    "duration": 23,
+    "start_time": "2021-07-01T10:14:27.897Z"
+   },
+   {
+    "duration": 60,
+    "start_time": "2021-07-01T10:14:27.923Z"
+   }
+  ],
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.8"
+  },
+  "toc": {
+   "base_numbering": 1,
+   "nav_menu": {},
+   "number_sections": false,
+   "sideBar": true,
+   "skip_h1_title": true,
+   "title_cell": "Table of Contents",
+   "title_sidebar": "Contents",
+   "toc_cell": false,
+   "toc_position": {},
+   "toc_section_display": true,
+   "toc_window_display": true
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
